@@ -214,7 +214,6 @@ yarn-error.log*
 dev-debug.log
 # Dependency directories
 node_modules/
-# Environment variables
 # Editor directories and files
 .idea
 .vscode
@@ -235,3 +234,9 @@ GEMINI.md
 .taskmaster
 .github
 .gemini
+
+CLAUDE.md
+
+# Custom
+models/
+data/

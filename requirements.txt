@@ -1,0 +1,7 @@
+numpy>=1.21.0,<2.0.0
+scipy>=1.9.0,<1.14.0
+datasets>=2.0.0
+pandas
+transformers>=4.0.0
+torch
+lm-polygraph

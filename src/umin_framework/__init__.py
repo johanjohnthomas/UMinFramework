@@ -12,6 +12,7 @@ from .prompt_refiner import PromptRefiner
 from .uncertainty_head import UncertaintyHead
 from .generation_loop import GenerationLoop, BacktrackConfig, GenerationState
 from .augmented_llm import AugmentedLLM, AugmentedLLMConfig
+from .code_executor import SafeCodeExecutor, PassAtKCalculator, ExecutionResult, CodeValidator
 
 __all__ = [
     "PromptRefiner", 
@@ -20,5 +21,9 @@ __all__ = [
     "BacktrackConfig", 
     "GenerationState",
     "AugmentedLLM",
-    "AugmentedLLMConfig"
+    "AugmentedLLMConfig",
+    "SafeCodeExecutor",
+    "PassAtKCalculator", 
+    "ExecutionResult",
+    "CodeValidator"
 ]

@@ -11,5 +11,14 @@ __version__ = "0.1.0"
 from .prompt_refiner import PromptRefiner
 from .uncertainty_head import UncertaintyHead
 from .generation_loop import GenerationLoop, BacktrackConfig, GenerationState
+from .augmented_llm import AugmentedLLM, AugmentedLLMConfig
 
-__all__ = ["PromptRefiner", "UncertaintyHead", "GenerationLoop", "BacktrackConfig", "GenerationState"]
+__all__ = [
+    "PromptRefiner", 
+    "UncertaintyHead", 
+    "GenerationLoop", 
+    "BacktrackConfig", 
+    "GenerationState",
+    "AugmentedLLM",
+    "AugmentedLLMConfig"
+]

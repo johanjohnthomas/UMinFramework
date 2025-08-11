@@ -36,7 +36,7 @@ except ImportError as e:
     PreTrainedTokenizer = None
     LogitsProcessor = None
 
-# Import our UncertaintyHead
+# Import our UncertaintyHead and config utilities
 try:
     from .uncertainty_head import UncertaintyHead
     HAS_UNCERTAINTY_HEAD = True
@@ -44,6 +44,12 @@ except ImportError as e:
     logging.warning(f"UncertaintyHead not available: {e}")
     HAS_UNCERTAINTY_HEAD = False
     UncertaintyHead = None
+
+try:
+    from .config import log_backtrack_event, log_generation_progress
+    HAS_CONFIG = True
+except ImportError:
+    HAS_CONFIG = False
 
 
 class BacktrackingEvent(Enum):
@@ -357,8 +363,17 @@ class GenerationLoop:
                     backtrack_event["tokens_after"] = state.generated_tokens.copy()
                     state.backtrack_events.append(backtrack_event)
                     
+                    # Log backtracking event
+                    if HAS_CONFIG:
+                        log_backtrack_event(
+                            self.logger, 
+                            current_position, 
+                            config.backtrack_window, 
+                            backtrack_reason
+                        )
+                    
                     if success:
-                        self.logger.debug(f"Backtracked at position {current_position}")
+                        self.logger.info(f"Successfully backtracked at position {current_position}")
                     else:
                         self.logger.warning(f"Backtrack failed at position {current_position}")
                 

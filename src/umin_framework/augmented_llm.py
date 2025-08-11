@@ -17,6 +17,7 @@ try:
     from .prompt_refiner import PromptRefiner
     from .uncertainty_head import UncertaintyHead
     from .generation_loop import GenerationLoop, BacktrackConfig
+    from .config import UMinConfig, get_config, log_generation_progress
     HAS_COMPONENTS = True
 except ImportError as e:
     logging.warning(f"UMinFramework components not available: {e}")
@@ -26,6 +27,7 @@ except ImportError as e:
     UncertaintyHead = None
     GenerationLoop = None
     BacktrackConfig = None
+    UMinConfig = None
 
 # Try to import transformers
 try:
@@ -105,7 +107,8 @@ class AugmentedLLM:
     - Prompt refinement using fine-tuned models
     - Real-time uncertainty quantification during generation
     - Automatic backtracking with Chain-of-Thought injection
-    - Configurable pipeline components
+    - Configurable pipeline components via YAML/JSON files
+    - Structured logging for observability
     - Compatible with Hugging Face transformers
     
     Example:
@@ -117,6 +120,65 @@ class AugmentedLLM:
         >>> result = augmented_llm.generate("What is the best programming language?")
         >>> print(f"Generated: {result['text']}")
     """
+    
+    @classmethod
+    def from_config(
+        cls,
+        config_path: Optional[Union[str, Path]] = None,
+        global_config: Optional[UMinConfig] = None
+    ) -> 'AugmentedLLM':
+        """
+        Create AugmentedLLM instance from configuration file or global config.
+        
+        Args:
+            config_path: Path to configuration file (YAML or JSON)
+            global_config: Pre-loaded UMinConfig instance
+            
+        Returns:
+            AugmentedLLM instance configured from file
+        """
+        if not HAS_COMPONENTS or UMinConfig is None:
+            raise ImportError("UMinFramework components not available")
+        
+        if global_config is not None:
+            config = global_config
+        elif config_path is not None:
+            from .config import load_config_from_file
+            config = load_config_from_file(config_path)
+        else:
+            config = get_config()
+        
+        # Convert UMinConfig to AugmentedLLMConfig for compatibility
+        augmented_config = AugmentedLLMConfig(
+            generation_model=config.augmented_model.name,
+            device=config.augmented_model.device,
+            torch_dtype=getattr(torch, config.augmented_model.torch_dtype) if config.augmented_model.torch_dtype else None,
+            trust_remote_code=config.augmented_model.trust_remote_code,
+            
+            enable_prompt_refinement=config.prompt_refiner.enabled,
+            prompt_refiner_model=config.prompt_refiner.model_path,
+            
+            enable_uncertainty_monitoring=config.uncertainty.enabled,
+            uncertainty_threshold=config.uncertainty.threshold,
+            uncertainty_method=config.uncertainty.method,
+            
+            enable_backtracking=config.backtracking.enabled,
+            backtrack_window=config.backtracking.window_size,
+            max_backtracks_per_generation=config.backtracking.max_backtracks_per_generation,
+            max_backtracks_per_position=config.backtracking.max_backtracks_per_position,
+            cot_templates=config.backtracking.cot_templates,
+            
+            max_length=config.generation.max_length,
+            min_length=config.generation.min_length,
+            do_sample=config.generation.do_sample,
+            temperature=config.generation.temperature,
+            top_k=config.generation.top_k,
+            top_p=config.generation.top_p,
+            repetition_penalty=config.generation.repetition_penalty,
+            num_return_sequences=config.generation.num_return_sequences
+        )
+        
+        return cls(config=augmented_config)
     
     def __init__(
         self,
@@ -281,14 +343,24 @@ class AugmentedLLM:
             # Apply configuration overrides
             effective_config = self._apply_config_overrides(override_config)
             
+            self.logger.info("Starting augmented generation")
+            self.logger.info(f"Input prompt length: {len(prompt)} characters")
+            
             # Step 1: Optionally refine the prompt
             if effective_config.enable_prompt_refinement and self.prompt_refiner:
-                self.logger.debug("Refining prompt...")
+                self.logger.info("Refining prompt using trained model...")
                 refined_prompt = self.prompt_refiner.refine(prompt)
-                self.logger.debug(f"Original: {prompt}")
-                self.logger.debug(f"Refined: {refined_prompt}")
+                
+                if refined_prompt != prompt:
+                    self.logger.info("Prompt successfully refined")
+                    self.logger.debug(f"Original: {prompt}")
+                    self.logger.debug(f"Refined: {refined_prompt}")
+                else:
+                    self.logger.info("No refinement needed")
             else:
                 refined_prompt = prompt
+                if effective_config.enable_prompt_refinement:
+                    self.logger.warning("Prompt refinement enabled but no refiner available")
             
             # Step 2: Prepare backtracking configuration
             backtrack_config = BacktrackConfig(
@@ -303,15 +375,31 @@ class AugmentedLLM:
             # Step 3: Generate with uncertainty monitoring and backtracking
             generation_params = self._prepare_generation_params(effective_config, generation_kwargs)
             
+            self.logger.info(f"Generation parameters: max_length={generation_params.get('max_length')}, "
+                           f"temperature={generation_params.get('temperature')}, "
+                           f"uncertainty_threshold={effective_config.uncertainty_threshold}")
+            
             if backtrack_config:
+                self.logger.info("Using uncertainty-aware generation with backtracking")
                 result = self.generation_loop.generate(
                     refined_prompt,
                     config=backtrack_config,
                     **generation_params
                 )
+                
+                # Log generation statistics
+                if result.get('backtrack_events', 0) > 0:
+                    self.logger.info(f"Generation completed with {result['backtrack_events']} backtrack events")
+                else:
+                    self.logger.info("Generation completed without backtracking")
+                
+                self.logger.info(f"Average uncertainty score: {result.get('avg_uncertainty', 0):.3f}")
             else:
-                # Use standard generation without backtracking
+                self.logger.info("Using standard generation (no backtracking)")
                 result = self._generate_without_backtracking(refined_prompt, generation_params)
+            
+            # Log final generation statistics
+            log_generation_progress(self.logger, result.get('generated_tokens', 0), generation_params.get('max_length', 0))
             
             # Step 4: Prepare final result
             if return_metadata:

@@ -11,6 +11,13 @@ from pathlib import Path
 from typing import Optional, List, Union, Dict, Any, Tuple
 import numpy as np
 
+# Try to import structured logging utilities
+try:
+    from .config import log_uncertainty_event
+    HAS_CONFIG = True
+except ImportError:
+    HAS_CONFIG = False
+
 # Try to import required libraries
 try:
     import torch
@@ -268,6 +275,12 @@ class UncertaintyHead:
         
         # Remove scores for special tokens at the end if needed
         scores = scores[:len(tokens)]
+        
+        # Log uncertainty scores if structured logging is available
+        if HAS_CONFIG:
+            threshold = getattr(self, 'uncertainty_threshold', 0.5)
+            for token, score in zip(tokens, scores):
+                log_uncertainty_event(self.logger, token, score, threshold)
         
         return scores, tokens
     

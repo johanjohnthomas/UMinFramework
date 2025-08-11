@@ -1,0 +1,75 @@
+# Example Configuration for Benchmarking
+# This configuration demonstrates how to customize the UMinFramework for specific experiments
+
+version: "1.0"
+description: "Benchmark Configuration - High Uncertainty Threshold"
+
+# Models for comparison
+baseline_model:
+  name: "gpt2"
+  device: null
+  trust_remote_code: false
+
+augmented_model:
+  name: "gpt2"
+  device: null
+  trust_remote_code: false
+
+# Enable prompt refinement if model is available
+prompt_refiner:
+  enabled: true
+  model_path: "models/prompt_refiner"
+  temperature: 0.6
+
+# Conservative uncertainty settings
+uncertainty:
+  enabled: true
+  method: "entropy"
+  threshold: 0.8  # Higher threshold = less frequent backtracking
+
+# Aggressive backtracking settings
+backtracking:
+  enabled: true
+  window_size: 5  # Larger rollback window
+  max_backtracks_per_generation: 10  # Allow more backtracks
+  max_backtracks_per_position: 3
+  cot_templates:
+    - " Let me carefully reconsider this problem."
+    - " I should approach this step by step."
+    - " Let me think about this more systematically."
+
+# Generation settings optimized for code
+generation:
+  max_length: 200
+  min_length: 5
+  temperature: 0.2  # Low temperature for more focused code generation
+  top_k: 40
+  top_p: 0.85
+  repetition_penalty: 1.15
+  do_sample: true
+
+# Benchmarking configuration
+benchmark:
+  datasets:
+    - "humaneval"
+    - "mbpp"
+  data_path: "data"
+  output_dir: "results/conservative_benchmark"
+  max_problems: 10  # Limit for quick testing
+  timeout: 45.0
+  k_values: [1, 3, 5]
+  qualitative_export: true
+  save_generated_code: true
+  export_qualitative_csv: true  # Export detailed CSV for human evaluation
+
+# Verbose logging for analysis
+logging:
+  level: "DEBUG"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_logging: true
+  log_dir: "logs/conservative"
+  
+  # Enable detailed logging
+  token_level_logging: false  # Too verbose for most cases
+  uncertainty_logging: true
+  backtrack_logging: true

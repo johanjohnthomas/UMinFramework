@@ -1,0 +1,103 @@
+# UMinFramework Default Configuration
+# This file contains all configurable parameters for the UMinFramework pipeline
+
+version: "1.0"
+description: "UMinFramework Default Configuration"
+
+# Baseline model configuration
+baseline_model:
+  name: "gpt2"
+  device: null  # auto-detect
+  torch_dtype: null  # auto-select
+  trust_remote_code: false
+  load_in_8bit: false
+  load_in_4bit: false
+
+# Augmented model configuration
+augmented_model:
+  name: "gpt2"  # Can be different from baseline
+  device: null
+  torch_dtype: null
+  trust_remote_code: false
+  load_in_8bit: false
+  load_in_4bit: false
+
+# Prompt refinement configuration
+prompt_refiner:
+  enabled: false  # Set to true when refiner model is available
+  model_path: "models/prompt_refiner"
+  max_length: 256
+  num_beams: 4
+  temperature: 0.7
+  do_sample: true
+
+# Uncertainty quantification configuration
+uncertainty:
+  enabled: true
+  method: "entropy"  # entropy, max_prob, margin, variance
+  threshold: 0.7  # Higher values = more conservative backtracking
+  calibration_dataset: null  # Optional dataset for threshold calibration
+
+# Backtracking configuration
+backtracking:
+  enabled: true
+  window_size: 3  # Number of tokens to roll back
+  max_backtracks_per_generation: 5  # Limit total backtracks per sequence
+  max_backtracks_per_position: 2   # Limit backtracks at same position
+  cot_templates:
+    - " Let me think step by step."
+    - " Let me reconsider this."
+    - " Actually, let me think about this more carefully."
+    - " Wait, let me approach this differently."
+    - " Let me break this down:"
+
+# Text generation configuration
+generation:
+  max_length: 256
+  min_length: 1
+  temperature: 0.8
+  top_k: 50
+  top_p: 0.9
+  repetition_penalty: 1.1
+  do_sample: true
+  num_return_sequences: 1
+
+# Benchmarking configuration
+benchmark:
+  datasets:
+    - "humaneval"
+    - "mbpp"
+  data_path: "data"
+  output_dir: "results"
+  max_problems: null  # null = use all problems
+  timeout: 30.0  # seconds for code execution
+  k_values:  # For pass@k calculation
+    - 1
+    - 3
+    - 5
+    - 10
+  qualitative_export: true  # Export data for human evaluation
+  save_generated_code: true  # Include full generated code in results
+
+# Logging configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_logging: true
+  log_dir: "logs"
+  max_bytes: 10485760  # 10MB
+  backup_count: 5
+  
+  # Specialized logging options
+  token_level_logging: false  # Log every token (very verbose)
+  uncertainty_logging: true   # Log uncertainty scores
+  backtrack_logging: true     # Log backtracking events
+
+# Environment variable overrides (prefix with UMIN_):
+# UMIN_LOG_LEVEL=DEBUG
+# UMIN_UNCERTAINTY_THRESHOLD=0.8
+# UMIN_BACKTRACK_WINDOW=5
+# UMIN_MAX_LENGTH=512
+# UMIN_TEMPERATURE=0.2
+# UMIN_DATA_PATH=/path/to/data
+# UMIN_OUTPUT_DIR=/path/to/results

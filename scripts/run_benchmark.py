@@ -24,6 +24,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 try:
     from umin_framework import AugmentedLLM, AugmentedLLMConfig
     from umin_framework.code_executor import SafeCodeExecutor, PassAtKCalculator, ExecutionResult
+    from umin_framework.config import UMinConfig, ConfigManager, LoggingSetup, get_config
     from transformers import AutoTokenizer, AutoModelForCausalLM
     import torch
     HAS_REQUIRED_DEPS = True
@@ -592,7 +593,7 @@ class BenchmarkRunner:
             'total_results': len(self.results)
         }
     
-    def save_results(self, filename: str = "benchmark_results.json"):
+    def save_results(self, filename: str = "benchmark_results.json", qualitative_export: bool = True):
         """Save benchmark results to file."""
         results_file = self.output_dir / filename
         
@@ -634,6 +635,10 @@ class BenchmarkRunner:
         
         # Also save a CSV for easier analysis
         self._save_csv_results()
+        
+        # Save qualitative evaluation export if requested
+        if qualitative_export:
+            self.save_qualitative_evaluation_export()
     
     def _save_csv_results(self):
         """Save results in CSV format for easier analysis."""
@@ -695,6 +700,315 @@ class BenchmarkRunner:
                 writer.writerow(row)
         
         self.logger.info(f"CSV results saved to: {csv_file}")
+    
+    def save_qualitative_evaluation_export(self, filename: str = "qualitative_evaluation.csv"):
+        """
+        Save detailed qualitative evaluation data for human review.
+        
+        This includes paired code snippets, metadata, and structured data
+        for manual evaluation of model outputs.
+        
+        Args:
+            filename: Name of the CSV file to save
+        """
+        import csv
+        
+        csv_file = self.output_dir / filename
+        
+        if not self.results:
+            self.logger.warning("No results to export for qualitative evaluation")
+            return
+        
+        # Define comprehensive fieldnames for qualitative review
+        fieldnames = [
+            # Problem identification
+            'problem_id', 'dataset', 'prompt_text', 'expected_solution',
+            'test_case', 'evaluation_category',
+            
+            # Baseline model results
+            'baseline_model', 'baseline_generated_code', 'baseline_passed', 
+            'baseline_generation_time', 'baseline_tokens_generated',
+            'baseline_execution_output', 'baseline_execution_error',
+            'baseline_execution_time', 'baseline_code_quality_notes',
+            
+            # Augmented model results
+            'augmented_generated_code', 'augmented_passed', 
+            'augmented_generation_time', 'augmented_tokens_generated',
+            'augmented_execution_output', 'augmented_execution_error',
+            'augmented_execution_time', 'augmented_code_quality_notes',
+            
+            # Augmented model specific metrics
+            'augmented_uncertainty_score', 'augmented_backtrack_events',
+            'augmented_prompt_refined', 'augmented_refinement_details',
+            
+            # Comparative analysis
+            'performance_comparison', 'code_quality_comparison',
+            'correctness_comparison', 'approach_differences',
+            
+            # Human evaluation fields (empty for manual filling)
+            'human_baseline_score', 'human_augmented_score',
+            'human_preference', 'human_notes', 'review_status',
+            
+            # Metadata
+            'timestamp', 'error_message'
+        ]
+        
+        with open(csv_file, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            
+            for result in self.results:
+                # Prepare code quality assessment
+                baseline_code_notes = self._assess_code_quality(
+                    result.baseline_generated, 
+                    result.baseline_execution_result
+                )
+                
+                augmented_code_notes = ""
+                augmented_refinement_details = ""
+                if result.augmented_generated:
+                    augmented_code_notes = self._assess_code_quality(
+                        result.augmented_generated,
+                        result.augmented_execution_result
+                    )
+                    
+                    # Add refinement details if available
+                    if result.augmented_prompt_refined:
+                        augmented_refinement_details = "Prompt was refined; see generation logs for details"
+                
+                # Determine evaluation category
+                eval_category = self._determine_evaluation_category(result)
+                
+                # Perform comparative analysis
+                performance_comp, quality_comp, correctness_comp, approach_diff = self._compare_results(result)
+                
+                # Extract execution details with full output
+                baseline_output, baseline_error = self._extract_execution_details(result.baseline_execution_result)
+                augmented_output, augmented_error = self._extract_execution_details(result.augmented_execution_result)
+                
+                row = {
+                    # Problem identification
+                    'problem_id': result.problem_id,
+                    'dataset': result.dataset,
+                    'prompt_text': self._clean_text_for_csv(result.prompt),
+                    'expected_solution': self._clean_text_for_csv(result.expected_solution),
+                    'test_case': self._clean_text_for_csv(result.test_case),
+                    'evaluation_category': eval_category,
+                    
+                    # Baseline results
+                    'baseline_model': result.baseline_model,
+                    'baseline_generated_code': self._clean_text_for_csv(result.baseline_generated),
+                    'baseline_passed': result.baseline_passed,
+                    'baseline_generation_time': result.baseline_generation_time,
+                    'baseline_tokens_generated': result.baseline_tokens_generated,
+                    'baseline_execution_output': baseline_output,
+                    'baseline_execution_error': baseline_error,
+                    'baseline_execution_time': getattr(result.baseline_execution_result, 'execution_time', None),
+                    'baseline_code_quality_notes': baseline_code_notes,
+                    
+                    # Augmented results
+                    'augmented_generated_code': self._clean_text_for_csv(result.augmented_generated or ""),
+                    'augmented_passed': result.augmented_passed,
+                    'augmented_generation_time': result.augmented_generation_time,
+                    'augmented_tokens_generated': result.augmented_tokens_generated,
+                    'augmented_execution_output': augmented_output,
+                    'augmented_execution_error': augmented_error,
+                    'augmented_execution_time': getattr(result.augmented_execution_result, 'execution_time', None) if result.augmented_execution_result else None,
+                    'augmented_code_quality_notes': augmented_code_notes,
+                    
+                    # Augmented model specific metrics
+                    'augmented_uncertainty_score': result.augmented_uncertainty_score,
+                    'augmented_backtrack_events': result.augmented_backtrack_events,
+                    'augmented_prompt_refined': result.augmented_prompt_refined,
+                    'augmented_refinement_details': augmented_refinement_details,
+                    
+                    # Comparative analysis
+                    'performance_comparison': performance_comp,
+                    'code_quality_comparison': quality_comp,
+                    'correctness_comparison': correctness_comp,
+                    'approach_differences': approach_diff,
+                    
+                    # Human evaluation fields (empty for manual completion)
+                    'human_baseline_score': '',
+                    'human_augmented_score': '',
+                    'human_preference': '',
+                    'human_notes': '',
+                    'review_status': 'pending',
+                    
+                    # Metadata
+                    'timestamp': result.timestamp,
+                    'error_message': result.error_message or ''
+                }
+                
+                writer.writerow(row)
+        
+        self.logger.info(f"Qualitative evaluation export saved to: {csv_file}")
+        self.logger.info("Human reviewers can now evaluate the paired code snippets and fill in evaluation fields")
+    
+    def _assess_code_quality(self, code: str, execution_result: Optional[ExecutionResult]) -> str:
+        """
+        Assess code quality and provide notes for human review.
+        
+        Args:
+            code: Generated code to assess
+            execution_result: Result of code execution
+            
+        Returns:
+            String with quality assessment notes
+        """
+        if not code or not code.strip():
+            return "No code generated"
+        
+        notes = []
+        
+        # Basic code structure assessment
+        if len(code.splitlines()) == 1:
+            notes.append("Single line solution")
+        elif len(code.splitlines()) > 50:
+            notes.append("Very long solution")
+        
+        # Check for common patterns
+        if "def " in code:
+            notes.append("Defines function(s)")
+        if "class " in code:
+            notes.append("Defines class(es)")
+        if "import " in code or "from " in code:
+            notes.append("Uses imports")
+        if "for " in code or "while " in code:
+            notes.append("Contains loops")
+        if "if " in code:
+            notes.append("Contains conditionals")
+        if "try:" in code or "except" in code:
+            notes.append("Has error handling")
+        
+        # Execution assessment
+        if execution_result:
+            if execution_result.success:
+                notes.append("Executes successfully")
+            else:
+                notes.append(f"Execution failed: {execution_result.error}")
+                
+        return "; ".join(notes) if notes else "Basic code structure"
+    
+    def _determine_evaluation_category(self, result: BenchmarkResult) -> str:
+        """
+        Categorize the problem for evaluation purposes.
+        
+        Args:
+            result: Benchmark result to categorize
+            
+        Returns:
+            Category string for human evaluation
+        """
+        baseline_passed = result.baseline_passed
+        augmented_passed = result.augmented_passed
+        
+        if baseline_passed is None and augmented_passed is None:
+            return "both_failed_to_generate"
+        elif baseline_passed and augmented_passed:
+            return "both_passed"
+        elif baseline_passed and not augmented_passed:
+            return "baseline_better"
+        elif not baseline_passed and augmented_passed:
+            return "augmented_better"
+        elif baseline_passed is False and augmented_passed is False:
+            return "both_failed"
+        else:
+            return "mixed_results"
+    
+    def _compare_results(self, result: BenchmarkResult) -> Tuple[str, str, str, str]:
+        """
+        Compare baseline and augmented results for qualitative analysis.
+        
+        Args:
+            result: Benchmark result to compare
+            
+        Returns:
+            Tuple of (performance_comparison, quality_comparison, correctness_comparison, approach_differences)
+        """
+        # Performance comparison
+        perf_comp = "N/A"
+        if result.baseline_generation_time and result.augmented_generation_time:
+            baseline_time = result.baseline_generation_time
+            augmented_time = result.augmented_generation_time
+            
+            time_diff = ((augmented_time - baseline_time) / baseline_time) * 100
+            if abs(time_diff) < 10:
+                perf_comp = "Similar generation time"
+            elif time_diff > 10:
+                perf_comp = f"Augmented {time_diff:.1f}% slower"
+            else:
+                perf_comp = f"Augmented {abs(time_diff):.1f}% faster"
+        
+        # Quality comparison (basic heuristics)
+        quality_comp = "Requires human evaluation"
+        
+        # Correctness comparison
+        correctness_comp = "N/A"
+        if result.baseline_passed is not None and result.augmented_passed is not None:
+            if result.baseline_passed and result.augmented_passed:
+                correctness_comp = "Both correct"
+            elif result.baseline_passed and not result.augmented_passed:
+                correctness_comp = "Baseline correct, augmented incorrect"
+            elif not result.baseline_passed and result.augmented_passed:
+                correctness_comp = "Augmented correct, baseline incorrect"
+            else:
+                correctness_comp = "Both incorrect"
+        
+        # Approach differences
+        approach_diff = "Code comparison required"
+        if result.baseline_generated and result.augmented_generated:
+            baseline_len = len(result.baseline_generated.splitlines())
+            augmented_len = len(result.augmented_generated.splitlines())
+            
+            if abs(baseline_len - augmented_len) > 5:
+                approach_diff = f"Different code lengths (baseline: {baseline_len}, augmented: {augmented_len} lines)"
+        
+        return perf_comp, quality_comp, correctness_comp, approach_diff
+    
+    def _extract_execution_details(self, execution_result: Optional[ExecutionResult]) -> Tuple[str, str]:
+        """
+        Extract execution output and error details.
+        
+        Args:
+            execution_result: Execution result to extract from
+            
+        Returns:
+            Tuple of (output, error) strings
+        """
+        if not execution_result:
+            return "", ""
+        
+        output = getattr(execution_result, 'output', '') or ''
+        error = getattr(execution_result, 'error', '') or ''
+        
+        # Clean and truncate for CSV
+        output = self._clean_text_for_csv(output)
+        error = self._clean_text_for_csv(error)
+        
+        return output, error
+    
+    def _clean_text_for_csv(self, text: str) -> str:
+        """
+        Clean text for CSV export by handling newlines and special characters.
+        
+        Args:
+            text: Text to clean
+            
+        Returns:
+            Cleaned text suitable for CSV
+        """
+        if not text:
+            return ""
+        
+        # Replace problematic characters
+        cleaned = text.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+        
+        # Truncate very long text
+        if len(cleaned) > 2000:
+            cleaned = cleaned[:1997] + "..."
+        
+        return cleaned
 
 
 def main():
@@ -728,6 +1042,12 @@ def main():
         nargs="+", 
         default=["humaneval", "mbpp"],
         help="Datasets to evaluate on (default: humaneval mbpp)"
+    )
+    
+    # Configuration file support
+    parser.add_argument(
+        "--config",
+        help="Path to YAML/JSON configuration file"
     )
     
     # AugmentedLLM configuration
@@ -790,6 +1110,20 @@ def main():
         help="Code execution timeout in seconds (default: 30)"
     )
     
+    # Qualitative evaluation
+    parser.add_argument(
+        "--qualitative-export",
+        action="store_true",
+        default=True,
+        help="Export detailed qualitative evaluation CSV for human review (default: True)"
+    )
+    
+    parser.add_argument(
+        "--no-qualitative-export",
+        action="store_true",
+        help="Skip qualitative evaluation export"
+    )
+    
     # Logging
     parser.add_argument(
         "--verbose", "-v", 
@@ -810,18 +1144,48 @@ def main():
         logging.getLogger().setLevel(logging.DEBUG)
     
     try:
+        # Load configuration if provided
+        config_manager = None
+        framework_config = None
+        
+        if args.config:
+            config_manager = ConfigManager()
+            framework_config = config_manager.load_config(args.config)
+            
+            # Set up logging from configuration
+            LoggingSetup.setup_logging(framework_config.logging)
+            logger = logging.getLogger('benchmark')
+            logger.info(f"Loaded configuration from: {args.config}")
+        else:
+            # Use default configuration
+            framework_config = get_config()
+            logger = logging.getLogger('benchmark')
+        
         # Create AugmentedLLM configuration if not skipped
         augmented_config = None
         if not args.no_augmented:
-            augmented_config = AugmentedLLMConfig(
-                generation_model=args.augmented_model or args.baseline_model,
-                prompt_refiner_model=args.prompt_refiner_model,
-                enable_prompt_refinement=bool(args.prompt_refiner_model),
-                uncertainty_threshold=args.uncertainty_threshold,
-                backtrack_window=args.backtrack_window,
-                max_length=args.max_length,
-                temperature=args.temperature
-            )
+            if framework_config:
+                # Use framework configuration with CLI overrides
+                augmented_config = AugmentedLLMConfig(
+                    generation_model=args.augmented_model or args.baseline_model or framework_config.augmented_model.name,
+                    prompt_refiner_model=args.prompt_refiner_model or framework_config.prompt_refiner.model_path,
+                    enable_prompt_refinement=bool(args.prompt_refiner_model) or framework_config.prompt_refiner.enabled,
+                    uncertainty_threshold=args.uncertainty_threshold or framework_config.uncertainty.threshold,
+                    backtrack_window=args.backtrack_window or framework_config.backtracking.window_size,
+                    max_length=args.max_length or framework_config.generation.max_length,
+                    temperature=args.temperature or framework_config.generation.temperature
+                )
+            else:
+                # Fallback to CLI arguments only
+                augmented_config = AugmentedLLMConfig(
+                    generation_model=args.augmented_model or args.baseline_model,
+                    prompt_refiner_model=args.prompt_refiner_model,
+                    enable_prompt_refinement=bool(args.prompt_refiner_model),
+                    uncertainty_threshold=args.uncertainty_threshold,
+                    backtrack_window=args.backtrack_window,
+                    max_length=args.max_length,
+                    temperature=args.temperature
+                )
         
         # Initialize benchmark runner
         runner = BenchmarkRunner(
@@ -838,8 +1202,15 @@ def main():
         # Run benchmark
         stats = runner.run_benchmark(args.datasets)
         
-        # Save results
-        runner.save_results()
+        # Save results (with qualitative export based on CLI args and config)
+        qualitative_export = args.qualitative_export and not args.no_qualitative_export
+        
+        # Override with framework config if available
+        if framework_config and hasattr(framework_config, 'benchmark'):
+            config_export = getattr(framework_config.benchmark, 'export_qualitative_csv', True)
+            qualitative_export = qualitative_export and config_export
+        
+        runner.save_results(qualitative_export=qualitative_export)
         
         # Calculate pass@k metrics
         pass_at_k_stats = runner.calculate_pass_at_k()

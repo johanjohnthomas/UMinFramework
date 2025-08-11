@@ -37,7 +37,7 @@ class TestAugmentedLLMConfig(unittest.TestCase):
         self.assertTrue(config.enable_prompt_refinement)
         self.assertTrue(config.enable_uncertainty_monitoring)
         self.assertTrue(config.enable_backtracking)
-        self.assertEqual(config.generation_model, "gpt2")
+        self.assertEqual(config.generation_model, "mistralai/Mistral-7B-Instruct-v0.2")
         self.assertEqual(config.uncertainty_threshold, 0.7)
         self.assertEqual(config.backtrack_window, 3)
         self.assertEqual(config.max_backtracks_per_generation, 5)
@@ -443,7 +443,7 @@ class TestAugmentedLLMIntegration(unittest.TestCase):
         
         config = AugmentedLLMConfig(
             prompt_refiner_model="models/test_refiner",
-            generation_model="gpt2"
+            generation_model="mistralai/Mistral-7B-Instruct-v0.2"
         )
         
         augmented_llm = AugmentedLLM(config=config)
@@ -454,7 +454,7 @@ class TestAugmentedLLMIntegration(unittest.TestCase):
             device=None
         )
         mock_generation_loop_class.assert_called_once_with(
-            model="gpt2",
+            model="mistralai/Mistral-7B-Instruct-v0.2",
             tokenizer=None,
             uncertainty_head=None,
             device=None,

@@ -51,7 +51,7 @@ def create_mock_benchmark_results() -> List[BenchmarkResult]:
         prompt='def has_close_elements(numbers: List[float], threshold: float) -> bool:\n    """ Check if in given list of numbers, are any two numbers closer to each other than\n    given threshold.\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\n    False\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\n    True\n    """\n',
         expected_solution='    for idx, elem in enumerate(numbers):\n        for idx2, elem2 in enumerate(numbers):\n            if idx != idx2:\n                distance = abs(elem - elem2)\n                if distance < threshold:\n                    return True\n\n    return False\n',
         test_case='assert has_close_elements([1.0, 2.0, 3.0], 0.5) == False\nassert has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3) == True',
-        baseline_model="gpt2",
+        baseline_model="mistralai/Mistral-7B-Instruct-v0.2",
         baseline_generated='    for i in range(len(numbers)):\n        for j in range(i+1, len(numbers)):\n            if abs(numbers[i] - numbers[j]) < threshold:\n                return True\n    return False',
         baseline_passed=True,
         baseline_generation_time=1.2,
@@ -86,7 +86,7 @@ def create_mock_benchmark_results() -> List[BenchmarkResult]:
         prompt='def separate_paren_groups(paren_string: str) -> List[str]:\n    """ Input to this function is a string containing multiple groups of nested parentheses.\n    Your goal is to separate those group and return the list of those.\n    Separate groups are balanced (each open brace is properly closed) and not nested within each other\n    Ignore any spaces in the input string.\n    >>> separate_paren_groups("( ) (( )) (( )( ))")\n    ["()", "(())", "(()())"]\n    """\n',
         expected_solution='    result = []\n    current_string = ""\n    current_depth = 0\n\n    for c in paren_string:\n        if c == "(":\n            current_depth += 1\n            current_string += c\n        elif c == ")":\n            current_depth -= 1\n            current_string += c\n\n            if current_depth == 0:\n                result.append(current_string)\n                current_string = ""\n\n    return result',
         test_case='assert separate_paren_groups("( ) (( )) (( )( ))") == ["()", "(())", "(()())"]',
-        baseline_model="gpt2",
+        baseline_model="mistralai/Mistral-7B-Instruct-v0.2",
         baseline_generated='    groups = []\n    group = ""\n    depth = 0\n    for char in paren_string:\n        if char == "(":\n            group += char\n            depth += 1\n        elif char == ")":\n            depth -= 1\n            group += char\n    return groups  # Missing logic to add groups',
         baseline_passed=False,
         baseline_generation_time=0.8,
@@ -121,7 +121,7 @@ def create_mock_benchmark_results() -> List[BenchmarkResult]:
         prompt='def triangle_area(a, b, c):\n    """\n    Calculate the area of a triangle given three side lengths using Heron\'s formula.\n    >>> triangle_area(3, 4, 5)\n    6.0\n    """\n',
         expected_solution='    s = (a + b + c) / 2\n    area = (s * (s - a) * (s - b) * (s - c)) ** 0.5\n    return area',
         test_case='assert abs(triangle_area(3, 4, 5) - 6.0) < 0.001',
-        baseline_model="gpt2",
+        baseline_model="mistralai/Mistral-7B-Instruct-v0.2",
         baseline_generated='    # Calculate area\n    return a * b / 2  # Wrong formula',
         baseline_passed=False,
         baseline_generation_time=0.6,
@@ -166,7 +166,7 @@ def demonstrate_qualitative_export():
     
     # Create a mock benchmark runner with results
     runner = BenchmarkRunner.__new__(BenchmarkRunner)  # Create without calling __init__
-    runner.baseline_model = "gpt2"
+    runner.baseline_model = "mistralai/Mistral-7B-Instruct-v0.2"
     runner.output_dir = output_dir
     runner.results = create_mock_benchmark_results()
     

@@ -37,7 +37,7 @@ def run_simple_benchmark():
     cmd = [
         "python3",
         str(project_root / "scripts" / "run_benchmark.py"),
-        "--baseline-model", "gpt2",
+        "--baseline-model", "mistralai/Mistral-7B-Instruct-v0.2",
         "--data-path", str(project_root / "data"),
         "--output-dir", str(project_root / "results" / "example"),
         "--no-augmented",  # Skip AugmentedLLM to make it faster
@@ -93,8 +93,8 @@ def run_augmented_benchmark():
     cmd = [
         "python3",
         str(project_root / "scripts" / "run_benchmark.py"),
-        "--baseline-model", "gpt2",
-        "--augmented-model", "gpt2",
+        "--baseline-model", "mistralai/Mistral-7B-Instruct-v0.2",
+        "--augmented-model", "mistralai/Mistral-7B-Instruct-v0.2",
         "--prompt-refiner-model", str(refiner_path),
         "--data-path", str(project_root / "data"),
         "--output-dir", str(project_root / "results" / "example_augmented"),

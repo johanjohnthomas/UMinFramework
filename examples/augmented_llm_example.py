@@ -31,7 +31,7 @@ def example_basic_usage():
     try:
         # Create configuration
         config = AugmentedLLMConfig(
-            generation_model="gpt2",  # Use a small model for demo
+            generation_model="mistralai/Mistral-7B-Instruct-v0.2",  # Primary supported model
             enable_prompt_refinement=False,  # Disable since we don't have a trained refiner
             enable_uncertainty_monitoring=True,
             enable_backtracking=True,
@@ -99,7 +99,7 @@ def example_with_prompt_refinement():
     
     try:
         config = AugmentedLLMConfig(
-            generation_model="gpt2",
+            generation_model="mistralai/Mistral-7B-Instruct-v0.2",
             prompt_refiner_model=str(refiner_path),
             enable_prompt_refinement=True,
             enable_uncertainty_monitoring=True,
@@ -138,7 +138,7 @@ def example_configuration_options():
         {
             "name": "Conservative (High Uncertainty Threshold)",
             "config": AugmentedLLMConfig(
-                generation_model="gpt2",
+                generation_model="mistralai/Mistral-7B-Instruct-v0.2",
                 enable_prompt_refinement=False,
                 uncertainty_threshold=0.9,  # Very conservative
                 backtrack_window=2,
@@ -148,7 +148,7 @@ def example_configuration_options():
         {
             "name": "Aggressive (Low Uncertainty Threshold)",
             "config": AugmentedLLMConfig(
-                generation_model="gpt2",
+                generation_model="mistralai/Mistral-7B-Instruct-v0.2",
                 enable_prompt_refinement=False,
                 uncertainty_threshold=0.3,  # Very aggressive
                 backtrack_window=5,
@@ -158,7 +158,7 @@ def example_configuration_options():
         {
             "name": "No Backtracking",
             "config": AugmentedLLMConfig(
-                generation_model="gpt2",
+                generation_model="mistralai/Mistral-7B-Instruct-v0.2",
                 enable_prompt_refinement=False,
                 enable_backtracking=False,
                 max_length=30
@@ -192,7 +192,7 @@ def example_batch_generation():
     
     try:
         config = AugmentedLLMConfig(
-            generation_model="gpt2",
+            generation_model="mistralai/Mistral-7B-Instruct-v0.2",
             enable_prompt_refinement=False,
             max_length=40
         )
@@ -226,7 +226,7 @@ def example_pipeline_info():
     print("="*60)
     
     try:
-        config = AugmentedLLMConfig(generation_model="gpt2", enable_prompt_refinement=False)
+        config = AugmentedLLMConfig(generation_model="mistralai/Mistral-7B-Instruct-v0.2", enable_prompt_refinement=False)
         augmented_llm = AugmentedLLM(config=config)
         
         info = augmented_llm.get_pipeline_info()

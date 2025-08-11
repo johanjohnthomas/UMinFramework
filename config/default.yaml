@@ -5,8 +5,9 @@ version: "1.0"
 description: "UMinFramework Default Configuration"
 
 # Baseline model configuration
+# IMPORTANT: Only use models from docs/supported_models.md for uncertainty quantification
 baseline_model:
-  name: "gpt2"
+  name: "mistralai/Mistral-7B-Instruct-v0.2"  # Primary supported model with uncertainty heads
   device: null  # auto-detect
   torch_dtype: null  # auto-select
   trust_remote_code: false
@@ -14,8 +15,9 @@ baseline_model:
   load_in_4bit: false
 
 # Augmented model configuration
+# MUST match baseline model for proper uncertainty quantification
 augmented_model:
-  name: "gpt2"  # Can be different from baseline
+  name: "mistralai/Mistral-7B-Instruct-v0.2"  # Must have corresponding uncertainty head
   device: null
   torch_dtype: null
   trust_remote_code: false

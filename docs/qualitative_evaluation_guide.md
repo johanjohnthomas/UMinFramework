@@ -31,14 +31,14 @@ The UMinFramework includes a comprehensive qualitative evaluation export system 
 ```bash
 # Enable qualitative export (default behavior)
 python scripts/run_benchmark.py \
-    --baseline-model gpt2 \
+    --baseline-model mistralai/Mistral-7B-Instruct-v0.2 \
     --datasets humaneval \
     --max-problems 10 \
     --qualitative-export
 
 # Disable qualitative export
 python scripts/run_benchmark.py \
-    --baseline-model gpt2 \
+    --baseline-model mistralai/Mistral-7B-Instruct-v0.2 \
     --datasets humaneval \
     --no-qualitative-export
 ```
@@ -59,7 +59,7 @@ benchmark:
 # Run with configuration file
 python scripts/run_benchmark.py \
     --config config/benchmark_example.yaml \
-    --baseline-model gpt2
+    --baseline-model mistralai/Mistral-7B-Instruct-v0.2
 ```
 
 ### Programmatic Usage
@@ -69,7 +69,7 @@ from scripts.run_benchmark import BenchmarkRunner
 
 # Create runner with qualitative export enabled
 runner = BenchmarkRunner(
-    baseline_model="gpt2",
+    baseline_model="mistralai/Mistral-7B-Instruct-v0.2",
     dataset_path="data",
     output_dir="results",
     # ... other parameters

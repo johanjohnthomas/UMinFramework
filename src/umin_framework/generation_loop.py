@@ -111,7 +111,7 @@ class GenerationLoop:
     - Support for custom uncertainty methods and thresholds
     
     Example:
-        >>> model_path = "gpt2"
+        >>> model_path = "mistralai/Mistral-7B-Instruct-v0.2"
         >>> gen_loop = GenerationLoop(model_path)
         >>> config = BacktrackConfig(uncertainty_threshold=0.8)
         >>> result = gen_loop.generate("The capital of France is", config=config)

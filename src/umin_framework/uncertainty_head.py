@@ -48,7 +48,7 @@ class UncertaintyHead:
     which may indicate potential hallucinations or low-confidence outputs.
     
     Example:
-        >>> model_path = "gpt2"
+        >>> model_path = "mistralai/Mistral-7B-Instruct-v0.2"
         >>> ue_head = UncertaintyHead(model_path)
         >>> scores = ue_head.score("The capital of France is")
         >>> print(f"Uncertainty scores: {scores}")

@@ -4,5 +4,6 @@ datasets>=2.0.0
 pandas
 transformers>=4.0.0
 torch
-lm-polygraph
 pyyaml>=6.0  # For configuration file support
+# Note: Uncertainty heads from https://huggingface.co/llm-uncertainty-head
+# are loaded directly from Hugging Face Hub - no separate pip install needed

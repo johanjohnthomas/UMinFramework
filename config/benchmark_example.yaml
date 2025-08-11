@@ -4,14 +4,14 @@
 version: "1.0"
 description: "Benchmark Configuration - High Uncertainty Threshold"
 
-# Models for comparison
+# Models for comparison (IMPORTANT: Only use supported models from docs/supported_models.md)
 baseline_model:
-  name: "gpt2"
+  name: "mistralai/Mistral-7B-Instruct-v0.2"  # Primary supported model with uncertainty heads
   device: null
   trust_remote_code: false
 
 augmented_model:
-  name: "gpt2"
+  name: "mistralai/Mistral-7B-Instruct-v0.2"  # Must match uncertainty head availability
   device: null
   trust_remote_code: false
 

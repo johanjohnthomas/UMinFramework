@@ -27,7 +27,7 @@ except ImportError:
 @dataclass
 class ModelConfig:
     """Configuration for model loading and parameters."""
-    name: str = "gpt2"
+    name: str = "mistralai/Mistral-7B-Instruct-v0.2"  # Primary supported model with uncertainty heads
     device: Optional[str] = None
     torch_dtype: Optional[str] = None
     trust_remote_code: bool = False

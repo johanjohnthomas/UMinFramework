@@ -1,0 +1,74 @@
+augmented_model:
+  device: null
+  load_in_4bit: false
+  load_in_8bit: false
+  name: mistralai/Mistral-7B-Instruct-v0.2
+  torch_dtype: null
+  trust_remote_code: false
+backtracking:
+  cot_templates:
+  - ' Let me think step by step.'
+  - ' Let me reconsider this.'
+  - ' Actually, let me think about this more carefully.'
+  - ' Wait, let me approach this differently.'
+  - ' Let me break this down:'
+  enabled: true
+  max_backtracks_per_generation: 5
+  max_backtracks_per_position: 2
+  window_size: 3
+baseline_model:
+  device: null
+  load_in_4bit: false
+  load_in_8bit: false
+  name: mistralai/Mistral-7B-Instruct-v0.2
+  torch_dtype: null
+  trust_remote_code: false
+benchmark:
+  data_path: data
+  datasets:
+  - humaneval
+  - mbpp
+  export_qualitative_csv: true
+  k_values:
+  - 1
+  - 3
+  - 5
+  - 10
+  max_problems: null
+  output_dir: results
+  qualitative_export: true
+  save_generated_code: true
+  timeout: 30.0
+description: UMinFramework Configuration
+generation:
+  do_sample: true
+  max_length: 256
+  min_length: 1
+  num_return_sequences: 1
+  repetition_penalty: 1.1
+  temperature: 0.8
+  top_k: 50
+  top_p: 0.9
+logging:
+  backtrack_logging: true
+  backup_count: 5
+  file_logging: true
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+  level: INFO
+  log_dir: logs
+  max_bytes: 10485760
+  token_level_logging: false
+  uncertainty_logging: true
+prompt_refiner:
+  do_sample: true
+  enabled: false
+  max_length: 256
+  model_path: null
+  num_beams: 4
+  temperature: 0.7
+uncertainty:
+  calibration_dataset: null
+  enabled: true
+  method: entropy
+  threshold: 0.7
+version: '1.0'

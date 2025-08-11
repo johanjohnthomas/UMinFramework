@@ -1021,7 +1021,7 @@ def main():
     parser.add_argument(
         "--baseline-model", 
         required=True,
-        help="Name or path of the baseline model (e.g., 'gpt2', 'microsoft/DialoGPT-small')"
+        help="Name or path of the baseline model (e.g., 'mistralai/Mistral-7B-Instruct-v0.2', 'meta-llama/Meta-Llama-3.1-8B-Instruct')"
     )
     
     parser.add_argument(

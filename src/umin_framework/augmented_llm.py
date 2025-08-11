@@ -49,8 +49,8 @@ class AugmentedLLMConfig:
     enable_prompt_refinement: bool = True
     prompt_refiner_model: Optional[str] = None
     
-    # Generation model settings
-    generation_model: str = "gpt2"  # Default model
+    # Generation model settings (IMPORTANT: Use only supported models from docs/supported_models.md)
+    generation_model: str = "mistralai/Mistral-7B-Instruct-v0.2"  # Primary supported model
     device: Optional[str] = None
     torch_dtype: Optional[torch.dtype] = None
     trust_remote_code: bool = False
@@ -113,7 +113,7 @@ class AugmentedLLM:
     
     Example:
         >>> config = AugmentedLLMConfig(
-        ...     generation_model="microsoft/DialoGPT-medium",
+        ...     generation_model="mistralai/Mistral-7B-Instruct-v0.2",
         ...     uncertainty_threshold=0.8
         ... )
         >>> augmented_llm = AugmentedLLM(config)

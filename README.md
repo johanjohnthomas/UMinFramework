@@ -7,7 +7,7 @@ A comprehensive framework for uncertainty-aware language model code generation w
 ### 1. Setup Environment
 ```bash
 # Clone and setup
-git clone <repository_url>
+git clone git@github.com:johanjohnthomas/UMinFramework.git
 cd UMinFramework
 
 # Create virtual environment and install dependencies
@@ -383,9 +383,9 @@ If you use UMinFramework in your research, please cite:
 ```bibtex
 @software{uminframework2024,
   title={UMinFramework: Uncertainty-Guided Code Generation},
-  author={[Your Name]},
-  year={2024},
-  url={https://github.com/[your-repo]/UMinFramework}
+  author={johanjohnthomas},
+  year={2025},
+  url={https://github.com/johanjohnthomas/UMinFramework}
 }
 ```
 
